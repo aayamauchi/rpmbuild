@@ -267,7 +267,7 @@ fi
 %dir %{gem_dir}/cache
 %dir %{gem_dir}/gems
 %dir %{gem_dir}/specifications
-%doc %{gem_dir}/doc
+%dir %{gem_dir}/doc
 %ghost %{_bindir}/gem
 %{_bindir}/gem%{ruby_ver}
 
@@ -287,6 +287,9 @@ fi
 %config(noreplace)  %{_sysconfdir}/rpm/macros.%{name}
 
 %changelog
+* Fri Nov  6 2015 Alex Yamauchi <alex.yamauchi@hotschedules.com>
+- Setting the doc dir to a %dir type in the %files list.
+
 * Fri Mar 14 2014 Lee Trager <ltrager@amazon.com>
 - Fix gem18_extdir macro
 
@@ -376,7 +379,7 @@ fi
 - 1.8.23
 - Use system-wide cert.pem
 
-* Thu Apr 18 2012 Mamoru Tasaka <mtasaka@fedoraproject.org> - 1.8.22-1
+* Wed Apr 18 2012 Mamoru Tasaka <mtasaka@fedoraproject.org> - 1.8.22-1
 - 1.8.22
 
 * Thu Jan 26 2012 Vít Ondruch <vondruch@redhat.com> - 1.8.15-2
@@ -392,7 +395,7 @@ fi
 * Sat Jan 14 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.8.11-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
 
-* Mon Nov 11 2011 Mamoru Tasaka <mtasaka@fedoraproject.org> - 1.8.11-1
+* Fri Nov 11 2011 Mamoru Tasaka <mtasaka@fedoraproject.org> - 1.8.11-1
 - 1.8.11
 
 * Sun Aug 28 2011 Mamoru Tasaka <mtasaka@fedoraproject.org> - 1.8.10-1
