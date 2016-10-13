@@ -42,17 +42,17 @@
 %define ruby_version_string %{ruby_major}%{ruby_minor}
 %endif
 
-%if ! 0%{?httpd_libdir}
-%define httpd_libdir %{_libdir}/httpd/modules
-%endif
-
 %if ! 0%{?httpd_configdir}
 %define httpd_configdir %{_sysconfdir}/httpd/conf.d
 %endif
 
+%if ! 0%{?httpd_libdir}
+%define httpd_libdir %{_libdir}/httpd/modules
+%endif
+
 Name: mod%{apache_version_string}_passenger
 Version: %{passenger_major}.%{passenger_minor}.%{passenger_release}
-Release: 4%{?dist}
+Release: 5%{?dist}
 Summary: The Phusion Ruby %{ruby_version} passenger module for Apache %{apache_version}
 
 Group: System Environment/Daemons
@@ -66,55 +66,53 @@ BuildRequires: httpd%{apache_version_string}-devel
 BuildRequires: pcre-devel
 BuildRequires: libcurl-devel
 BuildRequires: zlib-devel
-Requires: httpd%{apache_version_string} = %(rpm -q httpd%{apache_version_string}-devel --queryformat '%%{VERSION}-%%{RELEASE}')
+Requires: httpd%{apache_version_string}
 Requires: pcre
 Requires: rubygem%{ruby_version_string}-passenger = %{version}
+
+%define passenger_base /usr/lib/ruby/gems/%{ruby_version}/gems/passenger-%{version}
+
+%if %{passenger_major} > 3
+%define mod_libdir %{passenger_base}/buildout/apache2
+%else
+%define mod_libdir %{passenger_base}/ext/apache2
+%endif
 
 %description
 The Phusion Ruby %{ruby_version} passenger module for Apache %{apache_version}
 
 
 %prep
-rm -rf passenger-%{version} || :
-cp -r /usr/lib/ruby/gems/%{ruby_version}/gems/passenger-%{version} ./
-cd passenger-%{version}
-#find src -type f -name Makefile \
-#    -exec sed -i -e "s@/usr/lib/ruby/gems/1.8/gems@${BUILDROOT}@g" {} \;
 
 
 %build
-export GEM_PATH=%{_builddir}/passenger-%{version}
 %if %{passenger_major} > 3
-${GEM_PATH}/bin/passenger-install-apache2-module --languages ruby --auto
+passenger-install-apache2-module --languages ruby --auto
 %else
-${GEM_PATH}/bin/passenger-install-apache2-module --auto
+passenger-install-apache2-module --auto
 %endif
 
 
 %install
-[ -d %{buildroot}%{httpd_libdir} ] \
-    || mkdir -p %{buildroot}%{httpd_libdir}
+[ -d %{buildroot}%{mod_libdir} ] \
+    || mkdir -p %{buildroot}%{mod_libdir}
 [ -d %{buildroot}%{httpd_configdir} ] \
     || mkdir -p %{buildroot}%{httpd_configdir}
+[ -d %{buildroot}%{httpd_libdir} ] \
+    || mkdir -p %{buildroot}%{httpd_libdir}
+ 
+install -m 644 %{mod_libdir}/mod_passenger.so \
+    %{buildroot}%{mod_libdir}/mod_passenger.so
+
+ln -snf %{mod_libdir}/mod_passenger.so \
+    %{buildroot}%{httpd_libdir}/mod_passenger.so
+
 
 %if %{passenger_major} > 3
-install -m 644 %{_builddir}/passenger-%{version}/buildout/apache2/mod_passenger.so \
-    %{buildroot}%{httpd_libdir}/mod_passenger.so
-%else
-install -m 644 %{_builddir}/passenger-%{version}/ext/apache2/mod_passenger.so \
-    %{buildroot}%{httpd_libdir}/mod_passenger.so
-%endif
-
-unset ${!GEM*}
-%if %{passenger_major} > 3
-%{_bindir}/passenger-install-apache2-module --snippet \
+passenger-install-apache2-module --snippet \
     | sed -ne '/^<.*>$/,/^<\/.*>$/ {/^<\// s/^/  PassengerEnabled off\n/;p}' \
     > %{buildroot}/%{httpd_configdir}/passenger.conf
 %else
-LoadModule passenger_module /usr/lib/ruby/gems/1.8/gems/passenger-3.0.21/ext/apache2/mod_passenger.so
-PassengerRoot /usr/lib/ruby/gems/1.8/gems/passenger-3.0.21
-PassengerRuby /usr/bin/ruby1.8
-
 echo '<IfModule mod_passenger.c>' > %{buildroot}/%{httpd_configdir}/passenger.conf
 %{_bindir}/passenger-install-apache2-module --snippet \
     | sed -ne '/LoadModule/ d;s/^/  /' \
@@ -123,16 +121,19 @@ echo '</IfModule>' >> %{buildroot}/%{httpd_configdir}/passenger.conf
 %endif
 
 %clean
-rm -rf ${BUILDROOT}/passenger-%{version} || :
 
 
 %files
 %defattr(-,root,root)
+%{mod_libdir}/mod_passenger.so
 %{httpd_libdir}/mod_passenger.so
 %config %{httpd_configdir}/passenger.conf
 
 
 %changelog
+* Tue Apr 19 2016 Alex Yamauchi <alex.yamauchi@hotschedules.com>
+- Cannot do a relocated build -- the path ends up in the binary.
+
 * Tue Apr 19 2016 Alex Yamauchi <alex.yamauchi@hotschedules.com>
 - Extending to be able to build other versions easily.
 - Changing the default Apache version to 2.2.
