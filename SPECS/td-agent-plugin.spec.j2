@@ -1,0 +1,85 @@
+# Hello packaging friend!
+#
+# If you find yourself using this 'fpm --edit' feature frequently, it is
+# a sign that fpm is missing a feature! I welcome your feature requests!
+# Please visit the following URL and ask for a feature that helps you never
+# need to edit this file again! :)
+#   https://github.com/jordansissel/fpm/issues
+# ------------------------------------------------------------------------
+
+# Disable the stupid stuff rpm distros include in the build process by default:
+#   Disable any prep shell actions. replace them with simply 'true'
+%define __spec_prep_post true
+%define __spec_prep_pre true
+#   Disable any build shell actions. replace them with simply 'true'
+%define __spec_build_post true
+%define __spec_build_pre true
+#   Disable any install shell actions. replace them with simply 'true'
+%define __spec_install_post true
+%define __spec_install_pre true
+#   Disable any clean shell actions. replace them with simply 'true'
+%define __spec_clean_post true
+%define __spec_clean_pre true
+# Disable checking for unpackaged files ?
+#%undefine __check_files
+
+# Use md5 file digest method. 
+# The first macro is the one used in RPM v4.9.1.1
+%define _binary_filedigest_algorithm 1
+# This is the macro I find on OSX when Homebrew provides rpmbuild (rpm v5.4.14)
+%define _build_binary_file_digest_algo 1
+
+# Use gzip payload compression
+%define _binary_payload w9.gzdio 
+
+
+Name: {{ package_prefix }}-{{ plugin_name }}
+Version: {{ plugin_version }}
+Release: {{ package_release }}%{?dist}
+Summary: {{ package_summary }}
+AutoReqProv: no
+# Seems specifying BuildRoot is required on older rpmbuild (like on CentOS 5)
+# fpm passes '--define buildroot ...' on the commandline, so just reuse that.
+BuildRoot: %buildroot
+# Add prefix, must not end with /
+
+Prefix: /
+
+Group: Languages/Development/Ruby
+License: {{ package_license }}
+Vendor: {{ package_vendor }}
+URL: {{ package_home }}
+Packager: {{ packager }} <oss@hotschedules.com>
+
+Requires: td-agent
+{% for require in package_requires %}
+Requires: {{ package_prefix }}({{ require[0] }}){{ require[1] }}
+%description
+{{ package_description }}
+
+%prep
+# noop
+
+%build
+# noop
+
+%install
+# noop
+
+%clean
+# noop
+
+
+
+
+%files
+%defattr(-,root,root,-)
+
+# Reject config files already listed or parent directories, then prefix files
+# with "/", then make sure paths with spaces are quoted. I hate rpm so much.
+{% for file in package_filenames %}
+{{ file }}
+{% endfor %}
+
+%changelog
+
